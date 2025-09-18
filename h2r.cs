@@ -1,232 +1,200 @@
-https://www.onlinegdb.com/online_csharp_compiler
-
 using System;
+using System.Collections.Generic;
 
-class MainClass 
+class Player
 {
-  static int GetPlayerRank (int[] PP, int points) 
-  {
-    int c;
-    for(c=0; c<50; c++)
-    {
-      if(points < PP[c])
-      {
-        return c;
-      }
-    }
-    return c;
-  }
+    public string Name;
+    public int Points;
+    public int MinimumPoints;
+    public int Outcome;
+    public bool IsPlacement;
+    public int PointsAfter;
 
-  static void Main () 
-  {
-    int[] PP = {0,100,200,300,400,500,600,700,800,900,1050,1200,1350,1500,1650,1800,1950,2100,2250,2400,2600,2800,3000,3200,3400,3700,4000,4300,4600,4900,5300,5700,6100,6500,6900,7400,7900,8400,8900,9400,10000,10600,11200,11800,12400,13100,13900,14800,15800,17000,999999999};
-    int[] worse_win = {100,92,85,79,74,70,66,63,60,58,56,54,53,52,51,50};
-    int[] better_win = {100,110,120,130,140,150,155,160,165,170,175,180,185,190,195,200};
-    int[] better_lose = {-100,-110,-120,-130,-140,-150,-155,-160,-165,-170,-175,-180,-185,-190,-195,-200};
-    int[] worse_lose = {-100,-90,-80,-71,-62,-54,-46,-39,-32,-26,-20,-15,-11,-8,-6,-5};
-
-    string[] players = {"Frox", "Rajzon", "Rabbit", "Pdlk0", "Osiek", "Boko", "Mystus", "Dedazen", "Xeon", "SneakiestDuke", "Shionavariel", "IndyCheck"};
-    //ID graczy w kolejności pozycji wyścigu
-    int[] outcome = {     0,        0,        0,        0,      0,      0,      0,         0,        0,          0,              0,           0};
-    int racers = 5; //Ilu graczy uczestniczyło w wyścigu
-    int multiplier = 1; // Mnożnik kalkulacji
-    int[] pp_before =  
+    public Player(string name, int points, int minPoints, int outcome, bool isPlacement)
     {
-      2322, //0=frox
-      1506, //1=rajzon
-      1413, //2=Rabbit
-      934, //3=pdlk0
-      547, //4=osiek
-      118, //5=boko
-      30, //6=Mystus
-      0, //7=Dedazen
-      479, //8=Xeon
-      1040,  //9=SneakiestDuke
-      14, //10=Shionavariel
-      8 //11=IndyCheck
-    };
-    int[] pp_minimum =  
-    {
-      598, //0=frox
-      368, //1=rajzon
-      385, //2=Rabbit
-      275, //3=pdlk0
-      104, //4=osiek
-      29, //5=boko
-      28, //6=Mystus
-      0, //7=Dedazen
-      65, //8=Xeon
-      133, //9=SneakiestDuke
-      14, //10=Shionavariel
-      8 //11=IndyCheck
-    };
-    int[] pp_after = new int[players.Length];
-
-    
-    //Pokaz liste graczy, ich power level i PP
-		Console.WriteLine("// Baza Graczy //");
-    for(int i=0; i<players.Length; i++)
-    {
-      int rank = GetPlayerRank(PP, pp_before[i]);
-      int needed = PP[rank] - pp_before[i];
-      Console.WriteLine(players[i]+" | Rank "+rank+" | "+pp_before[i]+"pp | Do Awansu: "+needed+"pp");
+        Name = name;
+        Points = points;
+        MinimumPoints = minPoints;
+        Outcome = outcome;
+        IsPlacement = isPlacement;
+        PointsAfter = points;
     }
-    Console.WriteLine("// Obliczenia //");
-    for(int i=0; i<pp_before.Length; i++)
+}
+
+class MainClass
+{
+    static readonly string[] RankNames = {"Drewno 1", "Drewno 2", "Drewno 3", "Brąz 1", "Brąz 2", "Brąz 3",
+        "Srebro 1", "Srebro 2", "Srebro 3", "Złoto 1", "Złoto 2", "Złoto 3",
+        "Platyna 1", "Platyna 2", "Platyna 3", "Szmaragd 1", "Szmaragd 2", "Szmaragd 3",
+        "Diament 1", "Diament 2", "Diament 3", "Szafir 1", "Szafir 2", "Szafir 3",
+        "Rubin 1", "Rubin 2", "Rubin 3", "Legenda"};
+    static readonly int[] RankThresholds = {0,75,150,250,325,400,
+        525,625,725,875,1000,1125,
+        1300,1450,1600,1800,1975,2150,
+        2375,2575,2775,3050,3325,3625,
+        3950,4400,5000,999999};
+    static readonly double[] Shields = {0.1,0.1,0.1,0.2,0.2,0.2,
+        0.3,0.3,0.3,0.4,0.4,0.4,
+        0.5,0.5,0.5,0.6,0.6,0.6,
+        0.7,0.7,0.7,0.8,0.8,0.8,
+        0.9,0.9,0.9,1.0};
+    static readonly int[] WorseWin = {50,46,42,39,36,33,31,29,27,26,25};
+    static readonly int[] BetterWin = {50,55,60,65,70,75,85,95,105,115,125};
+    static readonly int[] BetterLose = {-50,-55,-60,-65,-70,-75,-85,-95,-105,-115,-125};
+    static readonly int[] WorseLose = {-50,-45,-40,-35,-30,-25,-22,-19,-16,-13,-10};
+
+    static int GetPlayerRank(int points)
     {
-      int myrank = GetPlayerRank(PP, pp_before[i]);
-      // Jeżeli gracz nie uczestniczył
-      if(outcome[i] == 0)
-      {
-        if(myrank <= 10)
+        for (int i = 0; i < RankThresholds.Length; i++)
         {
-          pp_after[i] = pp_before[i]-1;
+            if (points < RankThresholds[i])
+                return i;
         }
-        else if(myrank > 10 || myrank <= 20)
-        {
-          pp_after[i] = pp_before[i]-2;
-        }
-        else if(myrank > 20 || myrank <= 30)
-        {
-          pp_after[i] = pp_before[i]-3;
-        }
-        else if(myrank > 30 || myrank <= 40)
-        {
-          pp_after[i] = pp_before[i]-4;
-        }
-        else if(myrank > 40 || myrank <= 50)
-        {
-          pp_after[i] = pp_before[i]-5;
-        }
-        // Jeżeli gracz spadł poniżej 0, wyzeruj konto
-        if(pp_after[i] < 0)
-        {
-          pp_after[i] = 0;
-        }
-        // Jeżeli gracz spadł poniżej minimum, ustaw minimum.
-        if(pp_after[i] < pp_minimum[i])
-        {
-          pp_after[i] = pp_minimum[i];
-        }
-      }
-      else
-      {
-        double change = 0;
-        for(int j=0; j<outcome.Length; j++)
-        {
-          //Jeżeli gracz zajął lepszą pozycję niż konkurent
-          if(outcome[i] < outcome[j] && outcome[j] != 0)
-          {
-            int hisrank = GetPlayerRank(PP, pp_before[j]);
-            int rankdiff = Math.Abs(hisrank-myrank);
-            if(rankdiff >= 15)
-            {
-              rankdiff = 15;
-            }
-            //Jeżeli gracz ma mniejszą rangę niż konkurent, użyj better_win[]
-            if(myrank < hisrank)
-            {
-              change += better_win[rankdiff];
-              Console.WriteLine(players[i]+" pokonał "+players[j]+". "+rankdiff+" lvl różnicy, +"+better_win[rankdiff]+"pp");
-            }
-            //Jeżeli gracz ma większą rangę niż konkurent, użyj worse_win[]
-            else if(myrank >= hisrank)
-            {
-              change += worse_win[rankdiff];
-              Console.WriteLine(players[i]+" pokonał "+players[j]+". "+rankdiff+" lvl różnicy, +"+worse_win[rankdiff]+"pp");
-            }
-          }
-          //Jeżeli gracz zajął gorszą pozycję niż konkurent
-          else if(outcome[i] > outcome[j] && outcome[j] != 0)
-          {
-            int hisrank = GetPlayerRank(PP, pp_before[j]);
-            int rankdiff = Math.Abs(hisrank-myrank);
-            if(rankdiff >= 15)
-            {
-              rankdiff = 15;
-            }
-            //Jeżeli gracz ma mniejszą rangę niż konkurent, użyj worse_lose[]
-            if(myrank < hisrank)
-            {
-              change += worse_lose[rankdiff];
-              Console.WriteLine(players[i]+" przegrał z "+players[j]+". "+rankdiff+" lvl różnicy, "+worse_lose[rankdiff]+"pp");
-            }
-            //Jeżeli gracz ma większą rangę niż konkurent, użyj better_lose[]
-            else if(myrank >= hisrank)
-            {
-              change += better_lose[rankdiff];
-              Console.WriteLine(players[i]+" przegrał z "+players[j]+". "+rankdiff+" lvl różnicy, "+better_lose[rankdiff]+"pp");
-            }
-          }
-        }
-        //Podziel zdobyte punkty przez ilość przeciwników w wyścigu
-        change /= racers-1; //odejmij siebie samego bo potrzebujemy przeciwników
-        change *= multiplier; //Pomnóż wynik przez współczynnik
-        //Sprawdzanie czy potrzebny jest shield
-        if(change < 0 && myrank <= 25)
-        {
-          if(myrank <= 5)
-          {
-            change = change*0.1;
-          }
-          else if(myrank > 5 && myrank <= 10)
-          {
-            change = change*0.2;
-          }
-          else if(myrank > 10 && myrank <= 15)
-          {
-            change = change*0.4;
-          }
-          else if(myrank > 15 && myrank <= 20)
-          {
-            change = change*0.6;
-          }
-          else if(myrank > 20 && myrank <= 25)
-          {
-            change = change*0.8;
-          }
-          
-        }
-        //Nowe PP wpiszmy w nowy array bo nie kończymy ze sprawdzaniem graczy.
-        int changeint = Convert.ToInt16(Math.Floor(change));
-        pp_after[i] = pp_before[i]+changeint;
-        // Jeżeli gracz spadł poniżej 0, wyzeruj konto
-        if(pp_after[i] < 0)
-        {
-          pp_after[i] = 0;
-        }
-        // Jeżeli gracz spadł poniżej minimum, ustaw minimum.
-        if(pp_after[i] < pp_minimum[i])
-        {
-          pp_after[i] = pp_minimum[i];
-        }
-        if(change > 0) 
-        {
-          Console.WriteLine(players[i]+" zdobył "+changeint+"pp");
-        }
-        else if(change < 0)
-        {
-          Console.WriteLine(players[i]+" stracił "+changeint+"pp");
-        }
-      }
-    } 
-    Console.WriteLine("");
-    Console.WriteLine("// Ranking po wyścigu //");
-    {
-      for(int i=0; i<pp_after.Length; i++)
-      {
-        int rank = GetPlayerRank(PP, pp_after[i]);
-        int needed = PP[rank] - pp_after[i];
-        int difference = pp_after[i]-pp_before[i];
-        if(difference >= 0)
-        {
-          Console.WriteLine("["+rank+"] "+players[i]+"    "+pp_after[i]+"pp (+"+difference+"pp).    Awans za "+needed+"pp");
-        }
-        else
-        {
-          Console.WriteLine("["+rank+"] "+players[i]+"    "+pp_after[i]+"pp ("+difference+"pp).   Awans za "+needed+"pp");
-        }
-      }
+        return RankThresholds.Length - 1;
     }
-	}
+
+    static void PrintPlayers(List<Player> players)
+    {
+        Console.WriteLine("// Baza Graczy //");
+        foreach (var player in players)
+        {
+            int rank = GetPlayerRank(player.Points);
+            Console.WriteLine($"{player.Name} | {RankNames[rank - 1]} | {player.Points}pp");
+        }
+    }
+
+    static void CalculatePoints(List<Player> players, int racers, int multiplier)
+    {
+        Console.WriteLine("// Obliczenia //");
+        for (int i = 0; i < players.Count; i++)
+        {
+            var player = players[i];
+            int myRank = GetPlayerRank(player.Points);
+
+            if (player.Outcome == 0 && !player.IsPlacement)
+            {
+                if(myRank <= 6)
+                    player.PointsAfter = player.Points-1;
+                else if(myRank > 6 && myRank <= 12)
+                    player.PointsAfter = player.Points-2;
+                else if(myRank > 12 && myRank <= 18)
+                    player.PointsAfter = player.Points-3;
+                else if(myRank > 18 && myRank <= 24)
+                    player.PointsAfter = player.Points-4;
+                else if(myRank > 24 && myRank <= 28)
+                    player.PointsAfter = player.Points-5;
+                if(player.PointsAfter < 0)
+                    player.PointsAfter = 0;
+                if(player.PointsAfter < player.MinimumPoints)
+                    player.PointsAfter = player.MinimumPoints;
+            }
+            else if(player.Outcome == 0 && player.IsPlacement)
+                player.PointsAfter = player.Points;
+            else
+            {
+                double change = 0;
+                for (int j = 0; j < players.Count; j++)
+                {
+                    if (player.Outcome < players[j].Outcome && players[j].Outcome != 0)
+                    {
+                        int hisrank = GetPlayerRank(players[j].Points);
+                        int rankdiff = Math.Abs(hisrank-myRank);
+                        if(rankdiff >= 10)
+                            rankdiff = 10;
+                        if(myRank < hisrank)
+                        {
+                          change += BetterWin[rankdiff];
+                          Console.WriteLine(player.Name+" pokonał "+players[j].Name+". "+rankdiff+" lvl różnicy, +"+BetterWin[rankdiff]+"pp");
+                        }
+                        else if(myRank >= hisrank)
+                        {
+                          change += WorseWin[rankdiff];
+                          Console.WriteLine(player.Name+" pokonał "+players[j].Name+". "+rankdiff+" lvl różnicy, +"+WorseWin[rankdiff]+"pp");
+                        }
+                    }
+                    else if (player.Outcome > players[j].Outcome && players[j].Outcome != 0)
+                    {
+                        int hisrank = GetPlayerRank(players[j].Points);
+                        int rankdiff = Math.Abs(hisrank-myRank);
+                        if(rankdiff >= 10)
+                            rankdiff = 10;
+                        if(myRank < hisrank)
+                        {
+                          change += WorseLose[rankdiff];
+                          Console.WriteLine(player.Name+" przegrał z "+players[j].Name+". "+rankdiff+" lvl różnicy, "+WorseLose[rankdiff]+"pp");
+                        }
+                        else if(myRank >= hisrank)
+                        {
+                          change += BetterLose[rankdiff];
+                          Console.WriteLine(player.Name+" przegrał z "+players[j].Name+". "+rankdiff+" lvl różnicy, "+BetterLose[rankdiff]+"pp");
+                        }
+                    }
+                }
+                change /= racers-1;
+                change *= multiplier;
+                if(player.IsPlacement)
+                    change *= 2;
+                if(change < 0 && !player.IsPlacement)
+                    change = change*Shields[myRank-1];
+                int changeint = Convert.ToInt16(Math.Floor(change));
+                player.PointsAfter = player.Points+changeint;
+                if(player.PointsAfter < 0)
+                    player.PointsAfter = 0;
+                if(player.PointsAfter < player.MinimumPoints)
+                    player.PointsAfter = player.MinimumPoints;
+                if(change > 0) 
+                    Console.WriteLine($"{player.Name} zdobył {changeint} pp");
+                else if(change < 0)
+                    Console.WriteLine($"{player.Name} stracił {changeint} pp");
+            }
+        } 
+    }
+
+    static void PrintResults(List<Player> players)
+    {
+        Console.WriteLine("");
+        Console.WriteLine("// Ranking po wyścigu //");
+        foreach (var player in players)
+        {
+            int rank = GetPlayerRank(player.PointsAfter);
+            int needed = RankThresholds[rank] - player.PointsAfter;
+            int difference = player.PointsAfter - player.Points;
+            string diffStr = difference >= 0 ? $"+{difference}pp" : $"{difference}pp";
+            Console.WriteLine($"[{RankNames[rank - 1]}] {player.Name}    {player.PointsAfter}pp ({diffStr}).    Awans za {needed}pp");
+        }
+    }
+
+    static void Main()
+    {
+        int racers = 0;
+        var players = new List<Player>
+        {
+            new Player("Frox", 1826, 779, 0, true),
+            new Player("Rajzon", 959, 429, 0, true),
+            new Player("Rabbit", 1199, 490, 0, false),
+            new Player("Pdlk0", 727, 345, 0, true),
+            new Player("Osiek", 517, 104, 0, true),
+            new Player("Boko", 303, 29, 0, true),
+            new Player("Mystus", 132, 42, 0, true),
+            new Player("Dedazen", 250, 0, 0, true),
+            new Player("Xeon", 484, 65, 0, true),
+            new Player("Duke", 795, 184, 0, false),
+            new Player("Shiona", 264, 14, 0, true),
+            new Player("Indy", 258, 8, 0, true),
+            new Player("Alf", 462, 36, 0, true),
+            new Player("Gato", 267, 17, 0, true),
+        };
+
+        foreach(var player in players)
+        {
+            if(player.Outcome > 0)
+                racers += 1;
+        }
+
+        int multiplier = 1; // Globalny mnożnik na mini sezony
+
+        PrintPlayers(players);
+        CalculatePoints(players, racers, multiplier);
+        PrintResults(players);
+    }
 }

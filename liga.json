@@ -1,0 +1,100 @@
+[
+  {
+    "name": "Frox",
+    "points": 1826,
+    "min_points": 779,
+    "outcome": 0,
+    "is_placement": true
+  },
+  {
+    "name": "Rajzon",
+    "points": 959,
+    "min_points": 429,
+    "outcome": 0,
+    "is_placement": true
+  },
+  {
+    "name": "Rabbit",
+    "points": 1199,
+    "min_points": 490,
+    "outcome": 0,
+    "is_placement": false
+  },
+  {
+    "name": "Pdlk0",
+    "points": 727,
+    "min_points": 345,
+    "outcome": 0,
+    "is_placement": true
+  },
+  {
+    "name": "Osiek",
+    "points": 517,
+    "min_points": 104,
+    "outcome": 2,
+    "is_placement": true
+  },
+  {
+    "name": "Boko",
+    "points": 303,
+    "min_points": 29,
+    "outcome": 0,
+    "is_placement": true
+  },
+  {
+    "name": "Mystus",
+    "points": 132,
+    "min_points": 42,
+    "outcome": 5,
+    "is_placement": true
+  },
+  {
+    "name": "Dedazen",
+    "points": 250,
+    "min_points": 0,
+    "outcome": 0,
+    "is_placement": true
+  },
+  {
+    "name": "Xeon",
+    "points": 484,
+    "min_points": 65,
+    "outcome": 0,
+    "is_placement": true
+  },
+  {
+    "name": "Duke",
+    "points": 795,
+    "min_points": 184,
+    "outcome": 0,
+    "is_placement": false
+  },
+  {
+    "name": "Shiona",
+    "points": 264,
+    "min_points": 14,
+    "outcome": 0,
+    "is_placement": true
+  },
+  {
+    "name": "Indy",
+    "points": 258,
+    "min_points": 8,
+    "outcome": 0,
+    "is_placement": true
+  },
+  {
+    "name": "Alf",
+    "points": 462,
+    "min_points": 36,
+    "outcome": 0,
+    "is_placement": true
+  },
+  {
+    "name": "Gato",
+    "points": 267,
+    "min_points": 17,
+    "outcome": 0,
+    "is_placement": true
+  }
+]

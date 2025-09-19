@@ -5,12 +5,12 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 class Player:
-    def __init__(self, name, points, min_points, outcome, is_placement):
+    def __init__(self, name, points, min_points, outcome, races=0):
         self.name = name
         self.points = points
         self.min_points = min_points
         self.outcome = outcome
-        self.is_placement = is_placement
+        self.races = races
         self.points_after = points
 
 RankNames = ["Drewno 1", "Drewno 2", "Drewno 3", "Brąz 1", "Brąz 2", "Brąz 3",
@@ -45,7 +45,7 @@ def calculate_points(players, racers, multiplier):
     #print("// Obliczenia //")
     for player in players:
         my_rank = get_player_rank(player.points)
-        if player.outcome == 0 and not player.is_placement:
+        if player.outcome == 0 and player.races >= 5:
             if my_rank <= 6:
                 player.points_after = player.points - 1
             elif my_rank > 6 and my_rank <= 12:
@@ -60,7 +60,7 @@ def calculate_points(players, racers, multiplier):
                 player.points_after = 0
             if player.points_after < player.min_points:
                 player.points_after = player.min_points
-        elif player.outcome == 0 and player.is_placement:
+        elif player.outcome == 0 and player.races < 5:
             player.points_after = player.points
         else:
             change = 0
@@ -90,9 +90,9 @@ def calculate_points(players, racers, multiplier):
             if racers > 1:
                 change /= (racers - 1)
             change *= multiplier
-            if player.is_placement:
+            if player.races < 5:
                 change *= 2
-            if change < 0 and not player.is_placement:
+            if change < 0 and player.races >= 5:
                 change = change * Shields[my_rank - 1]
             changeint = int(change // 1)
             player.points_after = player.points + changeint
@@ -118,6 +118,11 @@ def print_results(players):
 def load_players_from_json(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
         data = json.load(f)
+    # Reset outcome for every player and save back to JSON
+    for entry in data:
+        entry["outcome"] = 0
+    with open(filepath, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
     players = []
     for entry in data:
         players.append(Player(
@@ -125,7 +130,7 @@ def load_players_from_json(filepath):
             entry["points"],
             entry["min_points"],
             entry["outcome"],
-            entry["is_placement"]
+            entry.get("races", entry.get("placement_races", 0))
         ))
     return players
 
@@ -225,33 +230,32 @@ class ResultSimulationDialog(Gtk.Dialog):
         self.set_default_size(700, 400)
         box = self.get_content_area()
 
-        # Calculate results
         racers = sum(1 for p in players if p.outcome > 0)
         calculate_points(players, racers, multiplier)
 
-        # Prepare grid for results
         grid = Gtk.Grid(column_spacing=6, row_spacing=6)
         grid.set_column_homogeneous(True)
         grid.set_row_homogeneous(True)
         box.pack_start(grid, True, True, 0)
 
-        # Header
         headers = ["Nick", "Nowa ranga", "Nowe punkty", "Zmiana punktów"]
         for col, header in enumerate(headers):
             grid.attach(Gtk.Label(label=f"<b>{header}</b>", use_markup=True), col, 0, 1, 1)
 
-        # Fill rows
-        for idx, player in enumerate(players):
+        row_idx = 1
+        for player in players:
             rank = get_player_rank(player.points_after)
             rank_name = RankNames[rank-1]
             diff = player.points_after - player.points
+            if diff == 0 and rank_name == RankNames[get_player_rank(player.points)-1]:
+                continue  # Skip unchanged players
             diff_str = f"+{diff}" if diff >= 0 else str(diff)
-            grid.attach(Gtk.Label(label=player.name), 0, idx+1, 1, 1)
-            grid.attach(Gtk.Label(label=rank_name), 1, idx+1, 1, 1)
-            grid.attach(Gtk.Label(label=str(player.points_after)), 2, idx+1, 1, 1)
-            grid.attach(Gtk.Label(label=diff_str), 3, idx+1, 1, 1)
+            grid.attach(Gtk.Label(label=player.name), 0, row_idx, 1, 1)
+            grid.attach(Gtk.Label(label=rank_name), 1, row_idx, 1, 1)
+            grid.attach(Gtk.Label(label=str(player.points_after)), 2, row_idx, 1, 1)
+            grid.attach(Gtk.Label(label=diff_str), 3, row_idx, 1, 1)
+            row_idx += 1
 
-        # Buttons
         self.add_button("Zapisz do JSON", Gtk.ResponseType.OK)
         self.add_button("Anuluj", Gtk.ResponseType.CANCEL)
         self.show_all()
@@ -286,26 +290,34 @@ class PlayerTable(Gtk.Window):
         self.players = players
         self.json_path = json_path
         self.multiplier = 1
+        self.modified = False
 
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.add(vbox)
 
         # Create ListStore for player data (add rank_name column)
-        self.liststore = Gtk.ListStore(str, int, int, bool, str)
+        self.liststore = Gtk.ListStore(str, int, int, str, int)
         for p in self.players:
             rank_name = RankNames[get_player_rank(p.points)-1]
-            self.liststore.append([p.name, p.points, p.min_points, p.is_placement, rank_name])
+            self.liststore.append([p.name, p.points, p.min_points, rank_name, p.races])
 
         # Create TreeView (add rank column)
         treeview = Gtk.TreeView(model=self.liststore)
         columns = [
             ("Nick", 0, Gtk.CellRendererText(), "text"),
-            ("Punkty", 1, Gtk.CellRendererText(), "text"),
-            ("Minimum", 2, Gtk.CellRendererText(), "text"),
-            ("Placementy", 3, Gtk.CellRendererToggle(), "active"),
-            ("Ranga", 4, Gtk.CellRendererText(), "text")
+            ("Punkty", 1, Gtk.CellRendererSpin(), "text"),
+            ("Minimum", 2, Gtk.CellRendererSpin(), "text"),
+            ("Ranga", 3, Gtk.CellRendererText(), "text"),
+            ("Races", 4, Gtk.CellRendererSpin(), "text")
         ]
         for col_title, col_idx, renderer, prop in columns:
+            if col_title in ("Punkty", "Minimum", "Races"):
+                renderer.set_property("editable", True)
+                renderer.set_property("adjustment", Gtk.Adjustment(0, 0, 99999, 1, 10, 0))
+                renderer.connect("edited", self.on_cell_edited, col_idx)
+            elif col_title == "Nick":
+                renderer.set_property("editable", True)
+                renderer.connect("edited", self.on_cell_edited, col_idx)
             column = Gtk.TreeViewColumn(col_title, renderer, **{prop: col_idx})
             treeview.append_column(column)
 
@@ -317,13 +329,33 @@ class PlayerTable(Gtk.Window):
         vbox.pack_start(button, False, False, 0)
 
         # Add New Player button
-        add_button = Gtk.Button(label="Dodaj nowego gracza")
+        add_button = Gtk.Button(label="Dodaj gracza do bazy")
         add_button.connect("clicked", self.on_add_player_clicked)
         vbox.pack_start(add_button, False, False, 0)
 
-    def on_outcome_edited(self, widget, path, value, col):
-        value = int(float(value))
+        # Save Changes button
+        self.save_button = Gtk.Button(label="Zapisz manualne zmiany")
+        self.save_button.connect("clicked", self.on_save_changes_clicked)
+        self.save_button.set_sensitive(False)
+        vbox.pack_start(self.save_button, False, False, 0)
+
+    def on_cell_edited(self, widget, path, value, col):
+        if col in (1, 2, 4):
+            value = int(float(value))
         self.liststore[path][col] = value
+        self.modified = True
+        self.save_button.set_sensitive(True)
+        if col == 1:
+            self.liststore[path][3] = RankNames[get_player_rank(self.liststore[path][1])-1]
+        idx = int(path)
+        if col == 0:
+            self.players[idx].name = value
+        elif col == 1:
+            self.players[idx].points = value
+        elif col == 2:
+            self.players[idx].min_points = value
+        elif col == 4:
+            self.players[idx].races = value
 
     def on_new_race_clicked(self, button):
         dialog = OutcomeEditDialog(self, self.players, self.multiplier)
@@ -335,7 +367,7 @@ class PlayerTable(Gtk.Window):
                 player.outcome = outcomes[i]
             # Update rank column if points changed
             for i, row in enumerate(self.liststore):
-                row[4] = RankNames[get_player_rank(row[1])-1]
+                row[3] = RankNames[get_player_rank(row[1])-1]
             dialog.destroy()
 
             # Show result simulation popup
@@ -345,16 +377,20 @@ class PlayerTable(Gtk.Window):
                 # Save outcomes and new points to JSON
                 data = []
                 for i, row in enumerate(self.liststore):
+                    # Races logic
+                    if self.players[i].outcome > 0:
+                        self.players[i].races += 1
+                        row[4] = self.players[i].races
                     data.append({
                         "name": row[0],
                         "points": self.players[i].points_after,
                         "min_points": row[2],
                         "outcome": 0,  # Reset outcome after saving
-                        "is_placement": row[3]
+                        "races": row[4]
                     })
                     # Update points in table for next race
                     row[1] = self.players[i].points_after
-                    row[4] = RankNames[get_player_rank(row[1])-1]
+                    row[3] = RankNames[get_player_rank(row[1])-1]
                     self.players[i].points = self.players[i].points_after
                     self.players[i].outcome = 0  # Reset outcome in memory
                 with open(self.json_path, "w", encoding="utf-8") as f:
@@ -375,10 +411,10 @@ class PlayerTable(Gtk.Window):
             name = dialog.get_player_name()
             if name:
                 # Add new player to data
-                new_player = Player(name, 250, 0, 0, True)
+                new_player = Player(name, 250, 0, 0, 0)
                 self.players.append(new_player)
                 rank_name = RankNames[get_player_rank(new_player.points)-1]
-                self.liststore.append([new_player.name, new_player.points, new_player.min_points, new_player.is_placement, rank_name])
+                self.liststore.append([new_player.name, new_player.points, new_player.min_points, rank_name, new_player.races])
                 # Save to JSON
                 data = []
                 for i, row in enumerate(self.liststore):
@@ -387,11 +423,27 @@ class PlayerTable(Gtk.Window):
                         "points": row[1],
                         "min_points": row[2],
                         "outcome": self.players[i].outcome,
-                        "is_placement": row[3]
+                        "races": row[4]
                     })
                 with open(self.json_path, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
         dialog.destroy()
+
+    def on_save_changes_clicked(self, button):
+        # Save all changes to JSON
+        data = []
+        for i, row in enumerate(self.liststore):
+            data.append({
+                "name": row[0],
+                "points": row[1],
+                "min_points": row[2],
+                "outcome": self.players[i].outcome,
+                "races": row[4]
+            })
+        with open(self.json_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        self.modified = False
+        self.save_button.set_sensitive(False)
 
 def main():
     json_path = DBPath

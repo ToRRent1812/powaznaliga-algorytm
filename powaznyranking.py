@@ -42,7 +42,6 @@ def get_player_rank(points):
     return len(RankThresholds) - 1
 
 def calculate_points(players, racers, multiplier):
-    #print("// Obliczenia //")
     for player in players:
         my_rank = get_player_rank(player.points)
         if player.outcome == 0 and player.races >= 5:
@@ -72,10 +71,8 @@ def calculate_points(players, racers, multiplier):
                         rankdiff = 10
                     if my_rank < his_rank:
                         change += BetterWin[rankdiff]
-                        #print(f"{player.name} pokonał {opponent.name}. {rankdiff} lvl różnicy, +{BetterWin[rankdiff]}pp")
                     else:
                         change += WorseWin[rankdiff]
-                        #print(f"{player.name} pokonał {opponent.name}. {rankdiff} lvl różnicy, +{WorseWin[rankdiff]}pp")
                 elif player.outcome > opponent.outcome and opponent.outcome != 0:
                     his_rank = get_player_rank(opponent.points)
                     rankdiff = abs(his_rank - my_rank)
@@ -83,10 +80,8 @@ def calculate_points(players, racers, multiplier):
                         rankdiff = 10
                     if my_rank < his_rank:
                         change += WorseLose[rankdiff]
-                        #print(f"{player.name} przegrał z {opponent.name}. {rankdiff} lvl różnicy, {WorseLose[rankdiff]}pp")
                     else:
                         change += BetterLose[rankdiff]
-                        #print(f"{player.name} przegrał z {opponent.name}. {rankdiff} lvl różnicy, {BetterLose[rankdiff]}pp")
             if racers > 1:
                 change /= (racers - 1)
             change *= multiplier
@@ -100,20 +95,13 @@ def calculate_points(players, racers, multiplier):
                 player.points_after = 0
             if player.points_after < player.min_points:
                 player.points_after = player.min_points
-            #if change > 0:
-                #print(f"{player.name} zdobył {changeint} pp")
-            #elif change < 0:
-                #print(f"{player.name} stracił {changeint} pp")
 
 def print_results(players):
-    #print("")
-    #print("// Ranking po wyścigu //")
     for player in players:
         rank = get_player_rank(player.points_after)
         needed = RankThresholds[rank] - player.points_after
         difference = player.points_after - player.points
         diff_str = f"+{difference}pp" if difference >= 0 else f"{difference}pp"
-        #print(f"[{RankNames[rank - 1]}] {player.name}    {player.points_after}pp ({diff_str}).    Awans za {needed}pp")
 
 def load_players_from_json(filepath):
     with open(filepath, "r", encoding="utf-8") as f:
@@ -248,7 +236,7 @@ class ResultSimulationDialog(Gtk.Dialog):
             rank_name = RankNames[rank-1]
             diff = player.points_after - player.points
             if diff == 0 and rank_name == RankNames[get_player_rank(player.points)-1]:
-                continue  # Skip unchanged players
+                continue
             diff_str = f"+{diff}" if diff >= 0 else str(diff)
             grid.attach(Gtk.Label(label=player.name), 0, row_idx, 1, 1)
             grid.attach(Gtk.Label(label=rank_name), 1, row_idx, 1, 1)

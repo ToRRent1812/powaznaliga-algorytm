@@ -1,0 +1,7 @@
+{
+  "python.analysis.extraPaths": [
+    "/nix/store/ik5lnngmxjkhv8kv8r2prgli2d8xgxic-python3-3.12.11-env/lib/python3.12/site-packages"
+  ],
+  "python.analysis.indexing": true,
+  "nixEnvSelector.nixFile": "${workspaceFolder}/shell.nix"
+}

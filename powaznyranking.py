@@ -342,6 +342,9 @@ class PlayerTable(Gtk.Window):
         scrolled_window.add(self.treeview) 
         vbox.pack_start(scrolled_window, True, True, 0)
 
+        # Poprawne podłączenie sygnału do podwójnego kliknięcia
+        self.treeview.connect("row-activated", self.on_treeview_row_activated)
+
         button = Gtk.Button(label="Nowy wyścig")
         button.connect("clicked", self.on_new_race_clicked)
         vbox.pack_start(button, False, False, 0)
@@ -438,29 +441,12 @@ class PlayerTable(Gtk.Window):
                 self.liststore.append([new_player.name, new_player.points, new_player.min_points, rank_name, new_player.races])
         dialog.destroy()
 
-    # Dodaj menu kontekstowe w tabeli do edycji i usuwania graczy
-    def on_treeview_right_click(self, treeview, event):
-        if event.button == 3:  # Prawy przycisk myszy
-            path_info = treeview.get_path_at_pos(int(event.x), int(event.y))
-            if path_info is not None:
-                path, column, cell_x, cell_y = path_info
-                treeview.grab_focus()
-                treeview.set_cursor(path, column, False)
+    # Zastępuje menu kontekstowe - podwójne kliknięcie otwiera okno edycji
+    def on_treeview_row_activated(self, treeview, path, column):
+        # Otwiera okno edycji po podwójnym kliknięciu na wiersz
+        self.on_edit_player(None, path)
 
-                menu = Gtk.Menu()
-
-                edit_item = Gtk.MenuItem(label="Edytuj")
-                edit_item.connect("activate", self.on_edit_player, path)
-                menu.append(edit_item)
-
-                remove_item = Gtk.MenuItem(label="Usuń")
-                remove_item.connect("activate", self.on_remove_player, path)
-                menu.append(remove_item)
-
-                menu.show_all()
-                menu.popup(None, None, None, None, event.button, event.time)
-
-    # Kliknięcie "Edytuj" w menu kontekstowym
+    # Kliknięcie "Edytuj" w menu kontekstowym lub podwójne kliknięcie
     def on_edit_player(self, menu_item, path):
         tree_iter = self.liststore.get_iter(path)
         player_data = self.liststore[path]
@@ -504,7 +490,25 @@ class PlayerTable(Gtk.Window):
         grid.attach(races_label, 0, 3, 1, 1)
         grid.attach(races_entry, 1, 3, 1, 1)
 
-        dialog.add_buttons("Zapisz", Gtk.ResponseType.OK, "Anuluj", Gtk.ResponseType.CANCEL)
+        # Usuń przycisk z siatki, dodaj go obok przycisków dialogowych
+        delete_button = Gtk.Button(label="Usuń gracza")
+        delete_button.connect("clicked", lambda btn: self._delete_player_and_close_dialog(dialog, path))
+
+        # Dodaj przyciski na dole okna
+        action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        action_box.set_halign(Gtk.Align.END)
+        action_box.pack_start(delete_button, False, False, 0)
+
+        # Dodaj przyciski Zapisz i Anuluj
+        save_button = Gtk.Button(label="Zapisz")
+        cancel_button = Gtk.Button(label="Anuluj")
+        action_box.pack_start(save_button, False, False, 0)
+        action_box.pack_start(cancel_button, False, False, 0)
+        content_area.pack_end(action_box, False, False, 10)
+
+        save_button.connect("clicked", lambda btn: dialog.response(Gtk.ResponseType.OK))
+        cancel_button.connect("clicked", lambda btn: dialog.response(Gtk.ResponseType.CANCEL))
+
         dialog.show_all()
 
         response = dialog.run()
@@ -519,17 +523,17 @@ class PlayerTable(Gtk.Window):
             self.save_to_json()
         dialog.destroy()
 
+    def _delete_player_and_close_dialog(self, dialog, path):
+        tree_iter = self.liststore.get_iter(path)
+        self.liststore.remove(tree_iter)
+        self.save_to_json()
+        dialog.destroy()
+
     # Sprawdzanie czy wpisana jest liczba
     def on_numeric_input(self, entry):
         text = entry.get_text()
         if not text.isdigit():
             entry.set_text("".join(filter(str.isdigit, text)))
-
-    # Kliknięcie "Usuń" w menu kontekstowym
-    def on_remove_player(self, menu_item, path):
-        tree_iter = self.liststore.get_iter(path)
-        self.liststore.remove(tree_iter)
-        self.save_to_json()
 
 # Generowanie przykładowego pliku JSON jeśli nie istnieje
 def generate_example_json(filepath):

@@ -372,6 +372,10 @@ class PlayerTable(Gtk.Window):
             sim_dialog = ResultSimulationDialog(self, self.players, self.multiplier)
             sim_response = sim_dialog.run()
             if sim_response == Gtk.ResponseType.OK:
+                # Dodaj +1 do liczby wyścigów dla graczy, którzy brali udział w symulacji
+                for player in self.players:
+                    if player.outcome > 0:
+                        player.races += 1
                 self.update_points()
                 self.save_to_json()
                 self.revert_button.set_sensitive(True)

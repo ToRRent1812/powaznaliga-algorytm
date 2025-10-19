@@ -1,5 +1,23 @@
 [
   {
+    "name": "Rabbit",
+    "points": 1191,
+    "min_points": 490,
+    "races": 6
+  },
+  {
+    "name": "Duke",
+    "points": 842,
+    "min_points": 184,
+    "races": 6
+  },
+  {
+    "name": "Mystus",
+    "points": 103,
+    "min_points": 42,
+    "races": 5
+  },
+  {
     "name": "Frox",
     "points": 1826,
     "min_points": 779,
@@ -10,12 +28,6 @@
     "points": 959,
     "min_points": 429,
     "races": 2
-  },
-  {
-    "name": "Rabbit",
-    "points": 1199,
-    "min_points": 490,
-    "races": 5
   },
   {
     "name": "Pdlk0",
@@ -36,12 +48,6 @@
     "races": 0
   },
   {
-    "name": "Mystus",
-    "points": 132,
-    "min_points": 42,
-    "races": 4
-  },
-  {
     "name": "Dedazen",
     "points": 250,
     "min_points": 0,
@@ -52,12 +58,6 @@
     "points": 484,
     "min_points": 65,
     "races": 0
-  },
-  {
-    "name": "Duke",
-    "points": 795,
-    "min_points": 184,
-    "races": 5
   },
   {
     "name": "Shiona",

@@ -3,19 +3,19 @@
     "name": "Rabbit",
     "points": 1191,
     "min_points": 490,
-    "races": 6
+    "races": 7
   },
   {
     "name": "Duke",
-    "points": 842,
+    "points": 891,
     "min_points": 184,
-    "races": 6
+    "races": 7
   },
   {
     "name": "Mystus",
-    "points": 103,
+    "points": 102,
     "min_points": 42,
-    "races": 5
+    "races": 6
   },
   {
     "name": "Frox",
@@ -25,9 +25,9 @@
   },
   {
     "name": "Rajzon",
-    "points": 959,
+    "points": 914,
     "min_points": 429,
-    "races": 2
+    "races": 3
   },
   {
     "name": "Pdlk0",

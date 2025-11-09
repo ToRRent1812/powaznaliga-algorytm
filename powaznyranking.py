@@ -409,6 +409,12 @@ class PlayerTable(Gtk.Window):
             json.dump(data, f, ensure_ascii=False, indent=2)
         self.revert_button.set_sensitive(False)
 
+        # Odśwież tabelę po zapisie
+        self.liststore.clear()
+        for p in self.players:
+            rank_name = RankNames[get_player_rank(p.points)-1]
+            self.liststore.append([p.name, p.points, p.min_points, rank_name, p.races])
+
     # Kliknięcie "Cofnij zmiany symulacji"
     def on_revert_changes_clicked(self, button):
         self.players = [Player(p.name, p.points, p.min_points, p.races) for p in self.saved_state]

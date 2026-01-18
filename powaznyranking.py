@@ -396,15 +396,17 @@ class PlayerTable(Gtk.Window):
     # Zapis zmian do pliku JSON
     def save_to_json(self):
         self.saved_state = [Player(p.name, p.points, p.min_points, p.races) for p in self.players]
-        data = [
-            {
+        data = []
+        for i, row in enumerate(self.liststore):
+            # Zapisz liczbę wyścigów z obiektu Player jeśli outcome > 0, w przeciwnym razie z tabeli
+            player = self.players[i]
+            races = player.races if getattr(player, "outcome", 0) > 0 else row[4]
+            data.append({
                 "name": row[0],
                 "points": row[1],
                 "min_points": row[2],
-                "races": row[4]
-            }
-            for row in self.liststore
-        ]
+                "races": races
+            })
         with open(self.json_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         self.revert_button.set_sensitive(False)

@@ -19,8 +19,8 @@ RankNames = [
     "Drewno 1", "Drewno 2", "Drewno 3", "Brąz 1", "Brąz 2", "Brąz 3",
     "Srebro 1", "Srebro 2", "Srebro 3", "Złoto 1", "Złoto 2", "Złoto 3",
     "Platyna 1", "Platyna 2", "Platyna 3", "Szmaragd 1", "Szmaragd 2", "Szmaragd 3",
-    "Diament 1", "Diament 2", "Diament 3", "Szafir 1", "Szafir 2", "Szafir 3",
-    "Rubin 1", "Rubin 2", "Rubin 3", "Legenda"
+    "Szafir 1", "Szafir 2", "Szafir 3", "Rubin 1", "Rubin 2", "Rubin 3",
+    "Diament 1", "Diament 2", "Diament 3", "Legenda"
 ]
 
 RankThresholds = [
@@ -66,6 +66,10 @@ def calculate_points(players, racers, multiplier):
 
     for player in players:
         my_rank = get_player_rank(player.points)
+        # Zapisz oryginalną liczbę wyścigów przed obliczeniem punktów
+        races_before = player.races
+        # Sprawdź, czy ten wyścig jest 5-tym (ostatni z mnożnikiem 2x)
+        is_last_placement = (player.outcome > 0 and races_before == 4)
         if player.outcome == 0:
             # Gracze którzy nie przeszli placementy, są zwolnieni z kar
             if player.races >= 5:
@@ -73,16 +77,22 @@ def calculate_points(players, racers, multiplier):
             else:
                 player.points_after = player.points
         else:
+            # Ustal mnożnik: jeśli to 5-ty wyścig, nadal 2x
+            effective_multiplier = multiplier * (2 if races_before < 5 or is_last_placement else 1)
             change = sum(
-                calculate_rank_difference_points(player, opponent, min(abs(get_player_rank(opponent.points) - my_rank), 10), my_rank, get_player_rank(opponent.points))
+                calculate_rank_difference_points(
+                    player, opponent,
+                    min(abs(get_player_rank(opponent.points) - my_rank), 10),
+                    my_rank, get_player_rank(opponent.points)
+                )
                 for opponent in players if opponent.outcome != 0 and player.outcome != opponent.outcome
             )
             if racers > 1:
-                change /= (racers - 1)  # Obliczanie średniej punktów
-            change *= multiplier * (2 if player.races < 5 else 1)  # Zastosowanie mnożnika i bonusu w trakcie placementów
-            if change < 0 and player.races >= 5:
-                change *= Shields[my_rank - 1]  # Zastosowanie tarczy po placementach w przypadku straty punktów
-            player.points_after = max(player.points + int(change), player.min_points, 0)  # punkty nie spadają poniżej minimum
+                change /= (racers - 1)
+            change *= effective_multiplier
+            if change < 0 and (races_before >= 5 and not is_last_placement):
+                change *= Shields[my_rank - 1]
+            player.points_after = max(player.points + int(change), player.min_points, 0)
 
 def load_players_from_json(filepath):
     # Wczytanie graczy z pliku JSON

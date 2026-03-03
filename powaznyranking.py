@@ -10,10 +10,21 @@ class Player:
         # Inicjalizacja atrybutów gracza
         self.name = name
         self.points = points
-        self.min_points = min_points
+        # Ustaw peak_points na 0 jeśli gracz jest w placementach, inaczej na points
+        self.peak_points = 0 if races < 5 else points
         self.races = races
         self.points_after = points
         self.outcome = 0
+
+    @property
+    def min_points(self):
+        # Minimum to 50% wartości szczytowej
+        return int(self.peak_points * 0.5)
+
+    def update_peak(self):
+        # Aktualizuj peak tylko jeśli gracz nie jest w placementach (races >= 5)
+        if self.races >= 5 and self.points > self.peak_points:
+            self.peak_points = self.points
 
 RankNames = [
     "Drewno 1", "Drewno 2", "Drewno 3", "Brąz 1", "Brąz 2", "Brąz 3",
@@ -93,12 +104,20 @@ def calculate_points(players, racers, multiplier):
             if change < 0 and (races_before >= 5 and not is_last_placement):
                 change *= Shields[my_rank - 1]
             player.points_after = max(player.points + int(change), player.min_points, 0)
+        # Aktualizuj peak po obliczeniu punktów
+        player.update_peak()
 
 def load_players_from_json(filepath):
     # Wczytanie graczy z pliku JSON
     with open(filepath, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return [Player(entry["name"], entry["points"], entry["min_points"], entry.get("races", 0)) for entry in data]
+    # Ustaw peak_points na 0 jeśli gracz jest w placementach, inaczej z pliku lub points
+    return [Player(
+        entry["name"],
+        entry["points"],
+        entry.get("peak_points", 0 if entry.get("races", 0) < 5 else entry["points"]),
+        entry.get("races", 0)
+    ) for entry in data]
 
 # Okno dialogowe do edycji wyników wyścigu
 class OutcomeEditDialog(Gtk.Dialog):
@@ -405,26 +424,25 @@ class PlayerTable(Gtk.Window):
 
     # Zapis zmian do pliku JSON
     def save_to_json(self):
-        self.saved_state = [Player(p.name, p.points, p.min_points, p.races) for p in self.players]
+        self.saved_state = [Player(p.name, p.points, p.peak_points, p.races) for p in self.players]
         data = []
         for i, row in enumerate(self.liststore):
-            # Zapisz liczbę wyścigów z obiektu Player jeśli outcome > 0, w przeciwnym razie z tabeli
             player = self.players[i]
             races = player.races if getattr(player, "outcome", 0) > 0 else row[4]
+            # Zapisz peak_points zamiast min_points
             data.append({
                 "name": row[0],
                 "points": row[1],
-                "min_points": row[2],
+                "peak_points": player.peak_points,
                 "races": races
             })
         with open(self.json_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         self.revert_button.set_sensitive(False)
-
-        # Odśwież tabelę po zapisie
         self.liststore.clear()
         for p in self.players:
             rank_name = RankNames[get_player_rank(p.points)-1]
+            # Wyświetl min_points jako 50% peak w tabeli
             self.liststore.append([p.name, p.points, p.min_points, rank_name, p.races])
 
     # Kliknięcie "Cofnij zmiany symulacji"
@@ -472,22 +490,17 @@ class PlayerTable(Gtk.Window):
     def on_edit_player(self, menu_item, path):
         tree_iter = self.liststore.get_iter(path)
         player_data = self.liststore[path]
-
         dialog = Gtk.Dialog(title="Edytuj gracza", transient_for=self, modal=True)
         dialog.set_default_size(300, 200)
         content_area = dialog.get_content_area()
-
         grid = Gtk.Grid(column_spacing=10, row_spacing=10)
         content_area.add(grid)
-
-        # Dodaj pola do edycji z wartościami
         name_label = Gtk.Label(label="Nick:")
         name_entry = Gtk.Entry()
         name_entry.set_text(player_data[0])
         name_entry.set_editable(True)
         grid.attach(name_label, 0, 0, 1, 1)
         grid.attach(name_entry, 1, 0, 1, 1)
-
         points_label = Gtk.Label(label="Punkty:")
         points_entry = Gtk.Entry()
         points_entry.set_text(str(player_data[1]))
@@ -495,15 +508,13 @@ class PlayerTable(Gtk.Window):
         points_entry.connect("changed", self.on_numeric_input)
         grid.attach(points_label, 0, 1, 1, 1)
         grid.attach(points_entry, 1, 1, 1, 1)
-
-        min_points_label = Gtk.Label(label="Minimum:")
-        min_points_entry = Gtk.Entry()
-        min_points_entry.set_text(str(player_data[2]))
-        min_points_entry.set_editable(True)
-        min_points_entry.connect("changed", self.on_numeric_input)
-        grid.attach(min_points_label, 0, 2, 1, 1)
-        grid.attach(min_points_entry, 1, 2, 1, 1)
-
+        peak_label = Gtk.Label(label="Peak:")
+        peak_entry = Gtk.Entry()
+        peak_entry.set_text(str(self.players[path.get_indices()[0]].peak_points))
+        peak_entry.set_editable(True)
+        peak_entry.connect("changed", self.on_numeric_input)
+        grid.attach(peak_label, 0, 2, 1, 1)
+        grid.attach(peak_entry, 1, 2, 1, 1)
         races_label = Gtk.Label(label="Wyścigów:")
         races_entry = Gtk.Entry()
         races_entry.set_text(str(player_data[4]))
@@ -511,36 +522,32 @@ class PlayerTable(Gtk.Window):
         races_entry.connect("changed", self.on_numeric_input)
         grid.attach(races_label, 0, 3, 1, 1)
         grid.attach(races_entry, 1, 3, 1, 1)
-
-        # Usuń przycisk z siatki, dodaj go obok przycisków dialogowych
         delete_button = Gtk.Button(label="Usuń gracza")
         delete_button.connect("clicked", lambda btn: self._delete_player_and_close_dialog(dialog, path))
-
-        # Dodaj przyciski na dole okna
         action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         action_box.set_halign(Gtk.Align.END)
         action_box.pack_start(delete_button, False, False, 0)
-
-        # Dodaj przyciski Zapisz i Anuluj
         save_button = Gtk.Button(label="Zapisz")
         cancel_button = Gtk.Button(label="Anuluj")
         action_box.pack_start(save_button, False, False, 0)
         action_box.pack_start(cancel_button, False, False, 0)
         content_area.pack_end(action_box, False, False, 10)
-
         save_button.connect("clicked", lambda btn: dialog.response(Gtk.ResponseType.OK))
         cancel_button.connect("clicked", lambda btn: dialog.response(Gtk.ResponseType.CANCEL))
-
         dialog.show_all()
-
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
+            idx = path.get_indices()[0]
+            self.players[idx].name = name_entry.get_text()
+            self.players[idx].points = int(points_entry.get_text())
+            self.players[idx].peak_points = int(peak_entry.get_text())
+            self.players[idx].races = int(races_entry.get_text())
             self.liststore[path] = [
-                name_entry.get_text(),
-                int(points_entry.get_text()),
-                int(min_points_entry.get_text()),
-                RankNames[get_player_rank(int(points_entry.get_text())) - 1],
-                int(races_entry.get_text())
+                self.players[idx].name,
+                self.players[idx].points,
+                self.players[idx].min_points,
+                RankNames[get_player_rank(self.players[idx].points) - 1],
+                self.players[idx].races
             ]
             self.save_to_json()
         dialog.destroy()

@@ -2,85 +2,85 @@
   {
     "name": "Rabbit",
     "points": 1155,
-    "min_points": 518,
+    "peak_points": 1199,
     "races": 9
   },
   {
     "name": "Duke",
     "points": 991,
-    "min_points": 224,
+    "peak_points": 991,
     "races": 9
   },
   {
     "name": "Mystus",
     "points": 100,
-    "min_points": 58,
+    "peak_points": 103,
     "races": 7
   },
   {
     "name": "Frox",
     "points": 1826,
-    "min_points": 779,
+    "peak_points": 0,
     "races": 3
   },
   {
     "name": "Rajzon",
     "points": 948,
-    "min_points": 451,
+    "peak_points": 1016,
     "races": 5
   },
   {
     "name": "Pdlk0",
     "points": 727,
-    "min_points": 345,
+    "peak_points": 0,
     "races": 1
   },
   {
     "name": "Osiek",
     "points": 517,
-    "min_points": 104,
+    "peak_points": 517,
     "races": 0
   },
   {
     "name": "Boko",
     "points": 303,
-    "min_points": 29,
+    "peak_points": 303,
     "races": 0
   },
   {
     "name": "Dedazen",
     "points": 250,
-    "min_points": 0,
+    "peak_points": 250,
     "races": 0
   },
   {
     "name": "Xeon",
     "points": 484,
-    "min_points": 65,
+    "peak_points": 484,
     "races": 0
   },
   {
     "name": "Shiona",
     "points": 264,
-    "min_points": 14,
+    "peak_points": 264,
     "races": 0
   },
   {
     "name": "Indy",
     "points": 258,
-    "min_points": 8,
+    "peak_points": 258,
     "races": 0
   },
   {
     "name": "Alf",
     "points": 462,
-    "min_points": 36,
+    "peak_points": 462,
     "races": 0
   },
   {
     "name": "Gato",
     "points": 267,
-    "min_points": 17,
+    "peak_points": 267,
     "races": 0
   }
 ]

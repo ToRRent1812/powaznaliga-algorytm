@@ -421,6 +421,8 @@ class PlayerTable(Gtk.Window):
             row[1] = player.points_after
             row[3] = RankNames[get_player_rank(player.points_after) - 1]
             player.points = player.points_after
+            player.update_peak(self)
+            
 
     # Zapis zmian do pliku JSON
     def save_to_json(self):
@@ -429,7 +431,6 @@ class PlayerTable(Gtk.Window):
         for i, row in enumerate(self.liststore):
             player = self.players[i]
             races = player.races if getattr(player, "outcome", 0) > 0 else row[4]
-            # Zapisz peak_points zamiast min_points
             data.append({
                 "name": row[0],
                 "points": row[1],
@@ -566,7 +567,7 @@ class PlayerTable(Gtk.Window):
 
 # Generowanie przykładowego pliku JSON jeśli nie istnieje
 def generate_example_json(filepath):
-    example_data = [{"name": "Gracz", "points": 250, "min_points": 0, "races": 0}]
+    example_data = [{"name": "Gracz", "points": 250, "peak_points": 0, "races": 0}]
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(example_data, f, ensure_ascii=False, indent=2)
 

@@ -6,12 +6,15 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 class Player:
-    def __init__(self, name, points, min_points, races=0):
+    def __init__(self, name, points, peak_points=None, races=0):
         # Inicjalizacja atrybutów gracza
         self.name = name
         self.points = points
-        # Ustaw peak_points na 0 jeśli gracz jest w placementach, inaczej na points
-        self.peak_points = 0 if races < 5 else points
+        # Użyj przekazanego peak_points jeśli podano, inaczej ustaw domyślnie
+        if peak_points is not None:
+            self.peak_points = peak_points
+        else:
+            self.peak_points = 0 if races < 5 else points
         self.races = races
         self.points_after = points
         self.outcome = 0
@@ -341,7 +344,7 @@ class PlayerTable(Gtk.Window):
         self.players = players
         self.json_path = json_path
         self.multiplier = 1 # Zresetuj mnożnik do 1 przy starcie
-        self.saved_state = [Player(p.name, p.points, p.min_points, p.races) for p in players]
+        self.saved_state = [Player(p.name, p.points, p.peak_points, p.races) for p in players]
 
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         self.add(vbox)
@@ -448,7 +451,7 @@ class PlayerTable(Gtk.Window):
 
     # Kliknięcie "Cofnij zmiany symulacji"
     def on_revert_changes_clicked(self, button):
-        self.players = [Player(p.name, p.points, p.min_points, p.races) for p in self.saved_state]
+        self.players = [Player(p.name, p.points, p.peak_points, p.races) for p in self.saved_state]
         self.liststore.clear()
         for p in self.players:
             rank_name = RankNames[get_player_rank(p.points) - 1]

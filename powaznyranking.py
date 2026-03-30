@@ -424,7 +424,7 @@ class PlayerTable(Gtk.Window):
             row[1] = player.points_after
             row[3] = RankNames[get_player_rank(player.points_after) - 1]
             player.points = player.points_after
-            player.update_peak(self)
+            player.update_peak()
             
 
     # Zapis zmian do pliku JSON

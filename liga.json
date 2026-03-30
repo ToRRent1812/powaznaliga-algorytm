@@ -1,21 +1,21 @@
 [
   {
     "name": "Rabbit",
-    "points": 1112,
-    "peak_points": 1155,
-    "races": 12
+    "points": 1157,
+    "peak_points": 1157,
+    "races": 15
   },
   {
     "name": "Duke",
-    "points": 976,
-    "peak_points": 991,
-    "races": 12
+    "points": 1015,
+    "peak_points": 1025,
+    "races": 15
   },
   {
     "name": "Mystus",
-    "points": 197,
+    "points": 194,
     "peak_points": 198,
-    "races": 10
+    "races": 13
   },
   {
     "name": "Frox",
@@ -25,15 +25,15 @@
   },
   {
     "name": "Rajzon",
-    "points": 1004,
-    "peak_points": 968,
+    "points": 998,
+    "peak_points": 1004,
     "races": 8
   },
   {
     "name": "Pdlk0",
-    "points": 870,
-    "peak_points": 0,
-    "races": 4
+    "points": 913,
+    "peak_points": 913,
+    "races": 7
   },
   {
     "name": "Osiek",

@@ -1,3 +1,4 @@
+import bisect
 import gi
 import os
 import json
@@ -7,28 +8,24 @@ from gi.repository import Gtk
 
 class Player:
     def __init__(self, name, points, peak_points=None, races=0):
-        # Inicjalizacja atrybutów gracza
         self.name = name
         self.points = points
-        # Użyj przekazanego peak_points jeśli podano, inaczej ustaw domyślnie
-        if peak_points is not None:
-            self.peak_points = peak_points
-        else:
-            self.peak_points = 0 if races < 5 else points
+        self.peak_points = peak_points if peak_points is not None else (0 if races < 5 else points)
         self.races = races
         self.points_after = points
         self.outcome = 0
 
     @property
     def min_points(self):
-        # Minimum to 50% wartości szczytowej
+        # Minimum to 50% szczytu kariery gracza
         return int(self.peak_points * 0.5)
 
     def update_peak(self):
-        # Aktualizuj peak tylko jeśli gracz nie jest w placementach (races >= 5)
+        # Aktualizuj peak tylko jeśli gracz nie jest w placementach
         if self.races >= 5 and self.points > self.peak_points:
             self.peak_points = self.points
 
+# Nazwy rang
 RankNames = [
     "Drewno 1", "Drewno 2", "Drewno 3", "Brąz 1", "Brąz 2", "Brąz 3",
     "Srebro 1", "Srebro 2", "Srebro 3", "Złoto 1", "Złoto 2", "Złoto 3",
@@ -37,8 +34,8 @@ RankNames = [
     "Diament 1", "Diament 2", "Diament 3", "Legenda"
 ]
 
+# Progi punktowe dla każdej rangi
 RankThresholds = [
-    # Progi punktowe dla każdej rangi
     0, 75, 150, 250, 325, 400, 525, 625, 725, 875, 1000, 1125,
     1300, 1450, 1600, 1800, 1975, 2150, 2375, 2575, 2775, 3050,
     3325, 3625, 3950, 4400, 5000, 999999
@@ -52,50 +49,41 @@ BetterWin = [50, 55, 60, 65, 70, 75, 85, 95, 105, 115, 125]  # Punkty za wygran�
 BetterLose = [-50, -55, -60, -65, -70, -75, -85, -95, -105, -115, -125]  # Punkty stracone przy przegranej z lepszym graczem
 WorseLose = [-50, -45, -40, -35, -30, -25, -22, -19, -16, -13, -10]  # Punkty stracone przy przegranej z gorszym graczem
 
-DBPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "liga.json")  # Ścieżka do pliku bazy danych JSON
+# OPADANIE: Odejmowanie punktów nieaktywnym graczom
+_DECAY_DEDUCTIONS = [1, 2, 3, 4, 5]
+_DECAY_THRESHOLDS = [6, 12, 18, 24, 28]
+
+DBPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "liga.json")
 
 def get_player_rank(points):
-    # Określa rangę gracza na podstawie jego punktów
-    for i, threshold in enumerate(RankThresholds):
-        if points < threshold:
-            return i
-    return len(RankThresholds) - 1
+    return bisect.bisect_right(RankThresholds, points)
 
 def calculate_points(players, racers, multiplier):
-    # Obliczanie punktów dla wszystkich graczy na podstawie wyników wyścigu
     def adjust_points_for_no_outcome(player, rank):
-        # DECAY: Odjęcie punktów graczom, którzy nie brali udziału w wyścigu, ale skończyli placementy
-        deductions = [1, 2, 3, 4, 5]
-        thresholds = [6, 12, 18, 24, 28]
-        for deduction, threshold in zip(deductions, thresholds):
+        for deduction, threshold in zip(_DECAY_DEDUCTIONS, _DECAY_THRESHOLDS):
             if rank <= threshold:
                 player.points_after = max(player.points - deduction, player.min_points, 0)
                 return
 
-    def calculate_rank_difference_points(player, opponent, rank_diff, my_rank, his_rank):
-        # Obliczanie punktów na podstawie różnicy rang i wyniku wyścigu
+    def rank_diff_points(my_outcome, opponent, rank_diff, my_rank, his_rank):
         if my_rank < his_rank:
-            return BetterWin[rank_diff] if player.outcome < opponent.outcome else WorseLose[rank_diff]
-        return WorseWin[rank_diff] if player.outcome < opponent.outcome else BetterLose[rank_diff]
+            return BetterWin[rank_diff] if my_outcome < opponent.outcome else WorseLose[rank_diff]
+        return WorseWin[rank_diff] if my_outcome < opponent.outcome else BetterLose[rank_diff]
 
     for player in players:
         my_rank = get_player_rank(player.points)
-        # Zapisz oryginalną liczbę wyścigów przed obliczeniem punktów
         races_before = player.races
-        # Sprawdź, czy ten wyścig jest 5-tym (ostatni z mnożnikiem 2x)
         is_last_placement = (player.outcome > 0 and races_before == 4)
         if player.outcome == 0:
-            # Gracze którzy nie przeszli placementy, są zwolnieni z kar
             if player.races >= 5:
                 adjust_points_for_no_outcome(player, my_rank)
             else:
                 player.points_after = player.points
         else:
-            # Ustal mnożnik: jeśli to 5-ty wyścig, nadal 2x
             effective_multiplier = multiplier * (2 if races_before < 5 or is_last_placement else 1)
             change = sum(
-                calculate_rank_difference_points(
-                    player, opponent,
+                rank_diff_points(
+                    player.outcome, opponent,
                     min(abs(get_player_rank(opponent.points) - my_rank), 10),
                     my_rank, get_player_rank(opponent.points)
                 )
@@ -107,18 +95,14 @@ def calculate_points(players, racers, multiplier):
             if change < 0 and (races_before >= 5 and not is_last_placement):
                 change *= Shields[my_rank - 1]
             player.points_after = max(player.points + int(change), player.min_points, 0)
-        # Aktualizuj peak po obliczeniu punktów
-        player.update_peak()
 
 def load_players_from_json(filepath):
-    # Wczytanie graczy z pliku JSON
     with open(filepath, "r", encoding="utf-8") as f:
         data = json.load(f)
-    # Ustaw peak_points na 0 jeśli gracz jest w placementach, inaczej z pliku lub points
     return [Player(
         entry["name"],
         entry["points"],
-        entry.get("peak_points", 0 if entry.get("races", 0) < 5 else entry["points"]),
+        entry.get("peak_points"),
         entry.get("races", 0)
     ) for entry in data]
 
@@ -186,19 +170,13 @@ class OutcomeEditDialog(Gtk.Dialog):
         self.grid.attach(remove_button, 3, row, 1, 1)
         self.show_all()
 
-    # Po zmianie parametrów w wierszu, aktualizuje stan przycisków "+" i "-"
     def on_player_selection_changed(self, combo):
         row = self.grid.child_get_property(combo, "top-attach")
-        add_button = self.grid.get_child_at(2, row)  
-        remove_button = self.grid.get_child_at(3, row)
-        if combo.get_active_text() == "Wybierz gracza":
-            add_button.set_sensitive(False)
-            remove_button.set_sensitive(False)
-        else:
-            add_button.set_sensitive(True)
-            remove_button.set_sensitive(True)
+        selected = combo.get_active_text() != "Wybierz gracza"
+        self.grid.get_child_at(2, row).set_sensitive(selected)
+        self.grid.get_child_at(3, row).set_sensitive(selected)
 
-    # Po kliknięciu przycisku "+" dodaje wybranego gracza do listy i tworzy nowy wiersz
+    # Po kliknięciu "+" dodaje wybranego gracza do listy i tworzy nowy wiersz
     def on_add_player_clicked(self, button, player_combo, outcome_spin):
         player_name = player_combo.get_active_text()
         if player_name == "Wybierz gracza" or not player_name:
@@ -213,7 +191,7 @@ class OutcomeEditDialog(Gtk.Dialog):
 
         self.add_player_row()
 
-    # Po kliknięciu przycisku "-" usuwa gracza z listy
+    # Po kliknięciu "-" usuwa gracza z listy
     def on_remove_player_clicked(self, button, player_combo, outcome_spin, row):
         player_name = player_combo.get_active_text()
         if player_name == "Wybierz gracza" or not player_name:
@@ -360,7 +338,7 @@ class PlayerTable(Gtk.Window):
             ("Punkty", 1),
             ("Minimum", 2),
             ("Ranga", 3),
-            ("Wyścigów", 4)
+            ("Kalkulacje", 4)
         ]
         for col_title, col_idx in columns:
             renderer = Gtk.CellRendererText()
@@ -368,7 +346,7 @@ class PlayerTable(Gtk.Window):
             column.set_sort_column_id(col_idx)
             self.treeview.append_column(column)
 
-        # Dodaj Scroll jeżeli wszystko nie mieści się w tabeli
+        # Dodaj Scroll jeżeli rekordy nie mieszczą się w tabeli
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scrolled_window.add(self.treeview) 
@@ -377,7 +355,7 @@ class PlayerTable(Gtk.Window):
         # Poprawne podłączenie sygnału do podwójnego kliknięcia
         self.treeview.connect("row-activated", self.on_treeview_row_activated)
 
-        button = Gtk.Button(label="Nowy wyścig")
+        button = Gtk.Button(label="Nowa kalkulacja")
         button.connect("clicked", self.on_new_race_clicked)
         vbox.pack_start(button, False, False, 0)
 
@@ -385,12 +363,12 @@ class PlayerTable(Gtk.Window):
         add_button.connect("clicked", self.on_add_player_clicked)
         vbox.pack_start(add_button, False, False, 0)
 
-        self.revert_button = Gtk.Button(label="Cofnij zmiany symulacji")
+        self.revert_button = Gtk.Button(label="Cofnij symulację")
         self.revert_button.connect("clicked", self.on_revert_changes_clicked)
         self.revert_button.set_sensitive(False)
         vbox.pack_start(self.revert_button, False, False, 0)
 
-    # Kliknięcie "Nowy wyścig"
+    # Kliknięcie "Nowa kalkulacja"
     def on_new_race_clicked(self, button):
         dialog = OutcomeEditDialog(self, self.players, self.multiplier)
         response = dialog.run()
@@ -415,25 +393,23 @@ class PlayerTable(Gtk.Window):
         else:
             dialog.destroy()
 
-    # Aktualizacja punktów i rang w tabeli
     def update_points(self):
         racers = sum(1 for p in self.players if p.outcome > 0)
         calculate_points(self.players, racers, self.multiplier)
         for i, row in enumerate(self.liststore):
             player = self.players[i]
-            row[1] = player.points_after
-            row[3] = RankNames[get_player_rank(player.points_after) - 1]
             player.points = player.points_after
             player.update_peak()
-            
+            row[1] = player.points
+            row[2] = player.min_points
+            row[3] = RankNames[get_player_rank(player.points) - 1]
 
-    # Zapis zmian do pliku JSON
     def save_to_json(self):
         self.saved_state = [Player(p.name, p.points, p.peak_points, p.races) for p in self.players]
         data = []
         for i, row in enumerate(self.liststore):
             player = self.players[i]
-            races = player.races if getattr(player, "outcome", 0) > 0 else row[4]
+            races = player.races if player.outcome > 0 else row[4]
             data.append({
                 "name": row[0],
                 "points": row[1],
@@ -445,8 +421,7 @@ class PlayerTable(Gtk.Window):
         self.revert_button.set_sensitive(False)
         self.liststore.clear()
         for p in self.players:
-            rank_name = RankNames[get_player_rank(p.points)-1]
-            # Wyświetl min_points jako 50% peak w tabeli
+            rank_name = RankNames[get_player_rank(p.points) - 1]
             self.liststore.append([p.name, p.points, p.min_points, rank_name, p.races])
 
     # Kliknięcie "Cofnij zmiany symulacji"
@@ -490,9 +465,7 @@ class PlayerTable(Gtk.Window):
         # Otwiera okno edycji po podwójnym kliknięciu na wiersz
         self.on_edit_player(None, path)
 
-    # Kliknięcie "Edytuj" w menu kontekstowym lub podwójne kliknięcie
     def on_edit_player(self, menu_item, path):
-        tree_iter = self.liststore.get_iter(path)
         player_data = self.liststore[path]
         dialog = Gtk.Dialog(title="Edytuj gracza", transient_for=self, modal=True)
         dialog.set_default_size(300, 200)
@@ -512,7 +485,7 @@ class PlayerTable(Gtk.Window):
         points_entry.connect("changed", self.on_numeric_input)
         grid.attach(points_label, 0, 1, 1, 1)
         grid.attach(points_entry, 1, 1, 1, 1)
-        peak_label = Gtk.Label(label="Peak:")
+        peak_label = Gtk.Label(label="Rekord:")
         peak_entry = Gtk.Entry()
         peak_entry.set_text(str(self.players[path.get_indices()[0]].peak_points))
         peak_entry.set_editable(True)
@@ -557,6 +530,8 @@ class PlayerTable(Gtk.Window):
         dialog.destroy()
 
     def _delete_player_and_close_dialog(self, dialog, path):
+        idx = path.get_indices()[0]
+        del self.players[idx]
         tree_iter = self.liststore.get_iter(path)
         self.liststore.remove(tree_iter)
         self.save_to_json()
@@ -576,11 +551,10 @@ def generate_example_json(filepath):
 
 # Główna pętla programu
 def main():
-    json_path = DBPath
-    if not os.path.isfile(json_path):
-        generate_example_json(json_path)
-    players = load_players_from_json(json_path)
-    win = PlayerTable(players, json_path) # Utworzenie głównego okna
+    if not os.path.isfile(DBPath):
+        generate_example_json(DBPath)
+    players = load_players_from_json(DBPath)
+    win = PlayerTable(players, DBPath)
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
     Gtk.main()

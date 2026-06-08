@@ -3,19 +3,19 @@
     "name": "Rabbit",
     "points": 1190,
     "peak_points": 1201,
-    "races": 21
+    "races": 23
   },
   {
     "name": "Duke",
-    "points": 1068,
+    "points": 1053,
     "peak_points": 1080,
-    "races": 21
+    "races": 23
   },
   {
     "name": "Mystus",
     "points": 211,
     "peak_points": 211,
-    "races": 16
+    "races": 18
   },
   {
     "name": "Frox",
@@ -25,13 +25,13 @@
   },
   {
     "name": "Rajzon",
-    "points": 1018,
+    "points": 1014,
     "peak_points": 1043,
     "races": 14
   },
   {
     "name": "Pdlk0",
-    "points": 1048,
+    "points": 1044,
     "peak_points": 1048,
     "races": 13
   },
@@ -82,5 +82,17 @@
     "points": 267,
     "peak_points": 0,
     "races": 0
+  },
+  {
+    "name": "LittleSoul",
+    "points": 530,
+    "peak_points": 0,
+    "races": 2
+  },
+  {
+    "name": "Michas",
+    "points": 121,
+    "peak_points": 0,
+    "races": 2
   }
 ]

@@ -58,6 +58,15 @@ DBPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "liga.json")
 def get_player_rank(points):
     return bisect.bisect_right(RankThresholds, points)
 
+def duel_win_bonus(racers):
+    if racers <= 6:
+        return 3
+    if racers <= 12:
+        return 2
+    if racers <= 18:
+        return 1
+    return 0
+
 def calculate_points(players, racers, multiplier):
     def adjust_points_for_no_outcome(player, rank):
         for deduction, threshold in zip(_DECAY_DEDUCTIONS, _DECAY_THRESHOLDS):
@@ -94,7 +103,14 @@ def calculate_points(players, racers, multiplier):
             change *= effective_multiplier
             if change < 0 and (races_before >= 5 and not is_last_placement):
                 change *= Shields[my_rank - 1]
-            player.points_after = max(player.points + int(change), player.min_points, 0)
+            wins = sum(
+                1 for opponent in players
+                if opponent.outcome != 0
+                and player.outcome != opponent.outcome
+                and player.outcome < opponent.outcome
+            )
+            bonus = wins * duel_win_bonus(racers)
+            player.points_after = max(player.points + int(change) + bonus, player.min_points, 0)
 
 def load_players_from_json(filepath):
     with open(filepath, "r", encoding="utf-8") as f:

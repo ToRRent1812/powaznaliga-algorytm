@@ -63,7 +63,7 @@ def duel_win_bonus(racers):
         return 3
     if racers <= 12:
         return 2
-    if racers <= 18:
+    if racers > 12:
         return 1
     return 0
 

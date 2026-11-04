@@ -90,19 +90,22 @@ def calculate_points(players, racers, multiplier):
                 player.points_after = player.points
         else:
             effective_multiplier = multiplier * (2 if races_before < 5 or is_last_placement else 1)
-            change = sum(
+            duel_points = [
                 rank_diff_points(
                     player.outcome, opponent,
                     min(abs(get_player_rank(opponent.points) - my_rank), 10),
                     my_rank, get_player_rank(opponent.points)
                 )
                 for opponent in players if opponent.outcome != 0 and player.outcome != opponent.outcome
-            )
+            ]
+            # Tarcza działa bezpośrednio na każdym przegranym pojedynku
+            if races_before >= 5 and not is_last_placement:
+                shield = Shields[my_rank - 1]
+                duel_points = [points * shield if points < 0 else points for points in duel_points]
+            change = sum(duel_points)
             if racers > 1:
                 change /= (racers - 1)
             change *= effective_multiplier
-            if change < 0 and (races_before >= 5 and not is_last_placement):
-                change *= Shields[my_rank - 1]
             wins = sum(
                 1 for opponent in players
                 if opponent.outcome != 0

@@ -1,93 +1,93 @@
 [
   {
     "name": "Rabbit",
-    "points": 1119,
-    "peak_points": 1201,
-    "races": 38
+    "points": 1215,
+    "peak_points": 1215,
+    "races": 40
   },
   {
     "name": "Duke",
-    "points": 1026,
+    "points": 1022,
     "peak_points": 1088,
     "races": 32
   },
   {
     "name": "Mystus",
-    "points": 196,
+    "points": 194,
     "peak_points": 211,
     "races": 19
   },
   {
     "name": "Frox",
-    "points": 1826,
-    "peak_points": 0,
-    "races": 3
+    "points": 1820,
+    "peak_points": 1823,
+    "races": 10
   },
   {
     "name": "Rajzon",
-    "points": 984,
+    "points": 980,
     "peak_points": 1043,
     "races": 14
   },
   {
     "name": "Pdlk0",
-    "points": 1010,
+    "points": 1006,
     "peak_points": 1048,
     "races": 14
   },
   {
     "name": "Osiek",
-    "points": 517,
-    "peak_points": 0,
-    "races": 0
+    "points": 513,
+    "peak_points": 515,
+    "races": 10
   },
   {
     "name": "Boko",
-    "points": 303,
-    "peak_points": 0,
-    "races": 0
+    "points": 301,
+    "peak_points": 302,
+    "races": 10
   },
   {
     "name": "Dedazen",
     "points": 250,
     "peak_points": 0,
-    "races": 0
+    "races": 4
   },
   {
     "name": "Xeon",
-    "points": 484,
-    "peak_points": 0,
-    "races": 0
+    "points": 480,
+    "peak_points": 482,
+    "races": 10
   },
   {
     "name": "Shiona",
     "points": 264,
     "peak_points": 0,
-    "races": 0
+    "races": 3
   },
   {
     "name": "Indy",
     "points": 258,
     "peak_points": 0,
-    "races": 0
+    "races": 1
   },
   {
     "name": "Alf",
-    "points": 462,
-    "peak_points": 0,
-    "races": 0
+    "points": 458,
+    "peak_points": 460,
+    "races": 10
   },
   {
     "name": "Gato",
     "points": 267,
     "peak_points": 0,
-    "races": 0
+    "races": 1
   },
   {
     "name": "LittleSoul",
-    "points": 1271,
+    "points": 1306,
     "peak_points": 1311,
-    "races": 17
+    "races": 19
   },
   {
     "name": "Michas",
@@ -97,14 +97,20 @@
   },
   {
     "name": "LordBlue",
-    "points": 195,
+    "points": 193,
     "peak_points": 205,
     "races": 7
   },
   {
     "name": "Firrsen",
-    "points": 692,
+    "points": 688,
+    "peak_points": 688,
+    "races": 6
+  },
+  {
+    "name": "Darekptr",
+    "points": 235,
     "peak_points": 0,
-    "races": 4
+    "races": 2
   }
 ]
